@@ -1,0 +1,46 @@
+<?php
+
+use Drupal\user\Entity\Role;
+use Drupal\user\Entity\User;
+
+/**
+ * Reads from file on shared drive and determines whether the specified user is in the list
+ *
+ * @param User $account: the user to test
+ * @return bool: if the username is in the list or not
+ */
+function _permissions_from_file_is_in_file(User $account) {
+  $contents = file_get_contents("/path/to/filename.csv");
+  return ($contents) ? preg_match("/" . $account->getAccountName() . "/",$contents) : NULL;
+}
+
+/**
+ * Adds or removes the role from the account
+ * 
+ * @param User $account: the user to add or remove the role from
+ */
+function _permissions_from_file_update_permissions(User $account) {
+  $is_in_file = _permissions_from_file_is_in_file($account);
+  $role = 'role_to_add';
+  if ($is_in_file && !$account->hasRole($role)) {
+    $account->addRole($role);
+    $account->save();
+  }
+  else if ($is_in_file == FALSE && $account->hasRole($role)) {
+    $account->removeRole($role);
+    $account->save();
+  }
+  else if ($is_in_file == NULL) {
+    //Failed to read file and should log an alert
+    \Drupal::logger('permissions_from_file')->alert("Failed to read usernames file");
+  }
+}
+
+/**
+ * Implements hook_user_login
+ * 
+ * @param User $account: user who has just logged in
+ */
+function permissions_from_file_user_login(User $account) {
+  _permissions_from_file_update_permissions($account);
+}
