@@ -1,0 +1,3 @@
+administer permissions from file:
+  title: "Administer permissions from file site-wide module settings"
+  restrict access: true

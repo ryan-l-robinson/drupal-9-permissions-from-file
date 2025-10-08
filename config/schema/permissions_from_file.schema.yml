@@ -1,0 +1,9 @@
+permissions_from_file.settings:
+  type: config_object
+  label: "Permissions From File settings"
+  mapping:
+    file_path:
+      type: path
+      label: "Path to the file with usernames"
+      constraints:
+        FullyValidatable: ~
