@@ -1,9 +1,27 @@
 permissions_from_file.settings:
   type: config_object
-  label: "Permissions From File settings"
+  label: "Permissions from file settings"
   mapping:
-    file_path:
-      type: path
-      label: "Path to the file with usernames"
-      constraints:
-        FullyValidatable: ~
+    mappings:
+      type: sequence
+      label: "File to Role Mappings"
+      sequence:
+        type: mapping
+        label: "File to Role Mapping item"
+        mapping:
+          file_path:
+            type: path
+            label: "Path to the file with usernames"
+            constraints:
+              FullyValidatable: ~
+          roles:
+            type: sequence
+            label: "Role IDs"
+            sequence:
+              type: string
+              label: "Role ID"
+    unmapped:
+      type: sequence
+      label: "Roles which are not mapped"
+      sequence:
+        type: string

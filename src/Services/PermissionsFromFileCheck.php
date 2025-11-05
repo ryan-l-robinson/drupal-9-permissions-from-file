@@ -3,6 +3,7 @@
 namespace Drupal\permissions_from_file\Services;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\user\Entity\User;
 
@@ -12,11 +13,18 @@ use Drupal\user\Entity\User;
 class PermissionsFromFileCheck {
 
   /**
-   * Config.
+   * Configuration management service.
    *
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $config;
+
+  /**
+   * Entity type manager service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManager
+   */
+  protected EntityTypeManager $entityTypeManager;
 
   /**
    * Logger.
@@ -27,9 +35,11 @@ class PermissionsFromFileCheck {
 
   public function __construct(
     ConfigFactoryInterface $config,
+    EntityTypeManager $entity_type_manager,
     LoggerChannelFactoryInterface $logger,
   ) {
     $this->config = $config;
+    $this->entityTypeManager = $entity_type_manager;
     $this->logger = $logger->get('permissions_from_file');
   }
 
@@ -38,12 +48,13 @@ class PermissionsFromFileCheck {
    *
    * @param \Drupal\user\Entity\User $account
    *   The user to test.
+   * @param string $path
+   *   The path of the file to check.
    *
    * @return ?bool
    *   if the username is in the list or not, or NULL if file couldn't be read
    */
-  public function isInList(User $account): bool|null {
-    $path = $this->config->getEditable('permissions_from_file.settings')->get('file_path');
+  public function isInFile(User $account, string $path): bool|null {
     if (is_string($path) && !empty($path)) {
       if (file_exists($path)) {
         $contents = file_get_contents($path);
@@ -69,18 +80,55 @@ class PermissionsFromFileCheck {
    * @param \Drupal\user\Entity\User $account
    *   The user to add or remove the role from.
    */
-  public function updateAlcPermissions(User $account): void {
-    $is_in_list = $this->isInList($account);
-    // @todo Move this out to be configurable, mapping files to roles.
-    $role = 'role_to_add';
-    if ($is_in_list && !$account->hasRole($role)) {
-      $account->addRole($role);
-      $account->save();
+  public function updatePermissions(User $account): void {
+    // This tracks roles to apply for the current user.
+    $roles_to_apply = [];
+
+    // Get each mapping from the config, then loop through them.
+    // Check all files, compile the list of permissions,
+    // then apply all the changes at once.
+    $mappings = $this->config->getEditable('permissions_from_file.settings')->get('mappings');
+
+    if (is_iterable($mappings)) {
+      foreach ($mappings as $mapping) {
+        if (is_array($mapping) && isset($mapping['file_path']) && isset($mapping['roles'])) {
+          $path = $mapping['file_path'];
+          $roles = $mapping['roles'];
+
+          foreach ($roles as $role) {
+            // Add to the roles list if in the file and not already there.
+            if ($this->isInFile($account, $path) && !in_array($role, $roles_to_apply)) {
+              $roles_to_apply[] = $role;
+            }
+          }
+        }
+      }
     }
-    elseif ($is_in_list == FALSE && $account->hasRole($role)) {
-      $account->removeRole($role);
-      $account->save();
+
+    // Add any roles as needed to the user.
+    foreach ($roles_to_apply as $role_to_apply) {
+      if (!$account->hasRole($role_to_apply)) {
+        $account->addRole($role_to_apply);
+      }
     }
+
+    // Remove any mapped roles which are currently applied
+    // and we now see from the files they shouldn't be.
+    $current_roles = $account->getRoles();
+    $unmapped_roles = $this->config->get('permissions_from_file.settings')->get('unmapped');
+    if (is_array($unmapped_roles)) {
+      foreach ($current_roles as $current_role) {
+        if (!in_array($current_role, $roles_to_apply) && !in_array($current_role, $unmapped_roles)) {
+          $account->removeRole($current_role);
+        }
+      }
+    }
+    else {
+      // Log an alert if configuration structure changed.
+      $this->logger->alert("Roles could not be removed. Has the configuration structure changed for the unmapped roles?");
+    }
+
+    $account->save();
   }
 
 }

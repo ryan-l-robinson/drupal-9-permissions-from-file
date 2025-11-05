@@ -1,8 +1,8 @@
 # Module settings (under Configuration) #
 permissions_from_file.settings_form:
-  path: "admin/config/people/file"
+  path: "admin/config/people/permissions-file"
   defaults:
-    _title: "Permissions from File"
+    _title: "Permissions From File"
     _form: 'Drupal\permissions_from_file\Form\PermissionsFromFileSettingsForm'
   requirements:
     _permission: "administer permissions from file"

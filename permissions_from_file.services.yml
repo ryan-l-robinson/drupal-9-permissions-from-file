@@ -1,6 +1,12 @@
 services:
   permissions_from_file.check:
-    class: Drupal\permissions_from_file\Services\PermissionCheck
+    class: Drupal\permissions_from_file\Services\PermissionsFromFileCheck
     arguments:
       - "@config.factory"
+      - "@entity_type.manager"
       - "@logger.factory"
+  permissions_from_file.config:
+    class: Drupal\permissions_from_file\Services\PermissionsFromFileConfig
+    arguments:
+      - "@config.factory"
+      - "@entity_type.manager"

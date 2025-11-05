@@ -5,13 +5,40 @@
  * Hook implementations.
  */
 
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\permissions_from_file\Services\PermissionsFromFileCheck;
+use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 
 /**
  * Implements hook_user_login().
  *
- * Test for permission status on each login.
+ * Test for status on each login.
  */
 function permissions_from_file_user_login(User $account): void {
-  \Drupal::service('permissions_from_file.check')->updatePermissions($account);
+  $check_service = \Drupal::service('permissions_from_file.check');
+  if ($check_service instanceof PermissionsFromFileCheck) {
+    $check_service->updatePermissions($account);
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert().
+ *
+ * When a new role is created, update the config
+ * for which roles are unmapped.
+ */
+function permissions_from_file_user_role_insert(EntityInterface $entity): void {
+  \Drupal::service('permissions_from_file.config')->updateUnmappedRoles();
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_delete().
+ *
+ * When a role is deleted, remove it from any config.
+ */
+function permissions_from_file_user_role_delete(EntityInterface $entity): void {
+  if ($entity instanceof Role) {
+    \Drupal::service('permissions_from_file.config')->removeRole(strval($entity->id()));
+  }
 }

@@ -1,0 +1,8 @@
+# Configuration menu #
+
+permissions_from_file.config:
+  title: "Permissions from file"
+  description: "Configure system wide settings for Permissions from file"
+  route_name: permissions_from_file.settings_form
+  parent: user.admin_index
+  weight: 0
