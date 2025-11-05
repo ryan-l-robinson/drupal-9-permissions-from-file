@@ -6,7 +6,6 @@
  */
 
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\permissions_from_file\Services\PermissionsFromFileCheck;
 use Drupal\user\Entity\Role;
 use Drupal\user\Entity\User;
 
@@ -16,10 +15,7 @@ use Drupal\user\Entity\User;
  * Test for status on each login.
  */
 function permissions_from_file_user_login(User $account): void {
-  $check_service = \Drupal::service('permissions_from_file.check');
-  if ($check_service instanceof PermissionsFromFileCheck) {
-    $check_service->updatePermissions($account);
-  }
+  \Drupal::service('permissions_from_file.check')->updatePermissions($account);
 }
 
 /**
