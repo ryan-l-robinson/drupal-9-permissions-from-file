@@ -1,4 +1,8 @@
-# Drupal Module: Permissions from File
+## Migrated
+
+This module is now available on [my Codeberg](https://codeberg.org/ryanrobinson/drupal-module-permissions-from-file).
+
+## Overview
 
 This is a custom module for a simple scenario of adding a role to a user when they log in if their name appears in a file on the server.
 
